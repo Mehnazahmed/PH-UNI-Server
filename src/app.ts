@@ -1,18 +1,22 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 const app: Application = express();
 import cors from 'cors';
-import { StudentRoutes } from './app/modules/student/student.route';
+
+import { any } from 'joi';
+import globalErrorHandler from './app/middlewares/globalErrorHandler';
+import notFound from './app/middlewares/notFound';
+import router from './app/routes';
 
 //parser
 app.use(express.json());
 app.use(cors());
 
 //app routes
-app.use('/api/v1/students', StudentRoutes);
+app.use('/api/v1', router);
 
-// const getAController = (req: Request, res: Response) => {
-//   const a = 10;
-//   res.send(a);
-// };
+//notFound
+
+app.use(notFound);
+app.use(globalErrorHandler);
 
 export default app;
