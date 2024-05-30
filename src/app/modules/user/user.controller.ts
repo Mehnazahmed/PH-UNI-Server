@@ -1,4 +1,4 @@
-import { userServices } from './user.service';
+import { UserServices } from './user.service';
 import sendResponse from '../../utils/sendResponse';
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
@@ -11,7 +11,7 @@ const createStudent = catchAsync(async (req, res, next) => {
   // const { error, value } = studentvalidationSchema.validate(studentData);
   // console.log({ error, value });
   // const zodparsedData = studentValidationSchema.parse(studentData);
-  const result = await userServices.createStudentIntoDB(password, studentData);
+  const result = await UserServices.createStudentIntoDB(password, studentData);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

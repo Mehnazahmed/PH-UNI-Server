@@ -1,58 +1,36 @@
 import { Schema, model } from 'mongoose';
 import {
-  TAcademicSemester,
-  TAcademicSemesterCode,
-  TAcademicSemesterName,
-  TMonths,
-} from './academicSemester.interface';
+  AcademicSemesterCode,
+  AcademicSemesterName,
+  Months,
+} from './academicSemester.constant';
+import { TAcademicSemester } from './academicSemester.interface';
 
-const Months: TMonths[] = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-const AcademicSemesterName: TAcademicSemesterName[] = [
-  'Autumn',
-  'Summer',
-  'Fall',
-];
-const AcademicSemesterCode: TAcademicSemesterCode[] = ['01', '02', '03'];
-
-const academicSemesterSchema = new Schema<TAcademicSemester>(
+const acdemicSemesterSchema = new Schema<TAcademicSemester>(
   {
     name: {
       type: String,
+      required: true,
       enum: AcademicSemesterName,
-      required: [true, 'Semester name is required'],
+    },
+    year: {
+      type: String,
+      required: true,
     },
     code: {
       type: String,
+      required: true,
       enum: AcademicSemesterCode,
-      required: [true, 'Semester code is required'],
-    },
-    year: {
-      type: Date,
-      required: [true, 'Year is required'],
     },
     startMonth: {
       type: String,
+      required: true,
       enum: Months,
-      required: [true, 'Start month is required'],
     },
     endMonth: {
       type: String,
+      required: true,
       enum: Months,
-      required: [true, 'End month is required'],
     },
   },
   {
@@ -60,7 +38,29 @@ const academicSemesterSchema = new Schema<TAcademicSemester>(
   },
 );
 
+acdemicSemesterSchema.pre('save', async function (next) {
+  const isSemesterExists = await AcademicSemester.findOne({
+    year: this.year,
+    name: this.name,
+  });
+
+  if (isSemesterExists) {
+    throw new Error('Semester is already exists !');
+  }
+  next();
+});
+
 export const AcademicSemester = model<TAcademicSemester>(
   'AcademicSemester',
-  academicSemesterSchema,
+  acdemicSemesterSchema,
 );
+
+// Name Year
+//2030 Autumn => Created
+// 2031 Autumn
+//2030 Autumn => XXX
+//2030 Fall => Created
+
+// Autumn 01
+// Summar 02
+// Fall 03
