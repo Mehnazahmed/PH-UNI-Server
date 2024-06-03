@@ -14,6 +14,11 @@ app.use(cors());
 app.use('/api/v1', router);
 
 //notFound
+const test = async (req: Request, res: Response) => {
+  //   Promise.reject();
+};
+
+app.get('/', test);
 
 app.use(notFound);
 app.use(globalErrorHandler);
