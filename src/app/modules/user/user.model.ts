@@ -1,34 +1,39 @@
-import { Schema, model } from 'mongoose';
-import { TUser } from './user.interface';
+/* eslint-disable @typescript-eslint/no-this-alias */
 import bcrypt from 'bcrypt';
+import { Schema, model } from 'mongoose';
 import config from '../../config';
-
-const userSchema = new Schema<TUser>(
+import { TUser, UserModel } from './user.interface';
+const userSchema = new Schema<TUser, UserModel>(
   {
     id: {
       type: String,
-      required: [true, 'User ID is required'],
+      required: true,
+      unique: true,
+    },
+    email: {
+      type: String,
+      required: true,
       unique: true,
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
-      maxlength: [20, 'Password cannot be more than 20 characters'],
+      required: true,
+      select: 0,
     },
     needsPasswordChange: {
       type: Boolean,
-      required: [true, 'Needs password change status is required'],
       default: true,
+    },
+    passwordChangedAt: {
+      type: Date,
     },
     role: {
       type: String,
-      enum: ['admin', 'student', 'faculty'],
-      required: [true, 'Role is required'],
+      enum: ['student', 'faculty', 'admin'],
     },
     status: {
       type: String,
       enum: ['in-progress', 'blocked'],
-      required: [true, 'Status is required'],
       default: 'in-progress',
     },
     isDeleted: {
@@ -37,33 +42,47 @@ const userSchema = new Schema<TUser>(
     },
   },
   {
-    toJSON: {
-      virtuals: true,
-    },
-    toObject: {
-      virtuals: true,
-    },
     timestamps: true,
   },
 );
 
-// Pre-save middleware to hash the password
 userSchema.pre('save', async function (next) {
-  const user = this;
-  if (user.isModified('password')) {
-    // Only hash the password if it has been modified (or is new)
-    user.password = await bcrypt.hash(
-      user.password,
-      Number(config.bcrypt_salt_rounds),
-    );
-  }
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  const user = this; // doc
+  // hashing password and save into DB
+
+  user.password = await bcrypt.hash(
+    user.password,
+    Number(config.bcrypt_salt_rounds),
+  );
+
   next();
 });
 
-//post save middleware
+// set '' after saving password
 userSchema.post('save', function (doc, next) {
   doc.password = '';
   next();
 });
 
-export const User = model<TUser>('User', userSchema);
+userSchema.statics.isUserExistsByCustomId = async function (id: string) {
+  return await User.findOne({ id }).select('+password');
+};
+
+userSchema.statics.isPasswordMatched = async function (
+  plainTextPassword,
+  hashedPassword,
+) {
+  return await bcrypt.compare(plainTextPassword, hashedPassword);
+};
+
+userSchema.statics.isJWTIssuedBeforePasswordChanged = function (
+  passwordChangedTimestamp: Date,
+  jwtIssuedTimestamp: number,
+) {
+  const passwordChangedTime =
+    new Date(passwordChangedTimestamp).getTime() / 1000;
+  return passwordChangedTime > jwtIssuedTimestamp;
+};
+
+export const User = model<TUser, UserModel>('User', userSchema);
